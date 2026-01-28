@@ -55,3 +55,43 @@ class VectorService:
         # LanceDB search API
         results = tbl.search(query_vector).limit(top_k).to_list()
         return results
+
+    def update_article(self, article):
+        """
+        Updates or Inserts a single article into LanceDB.
+        """
+        tbl = self.get_or_create_table()
+
+        # 1. Generate new embedding
+        text_to_embed = f"{article.title}. {article.content}"
+        vector = self.get_embedding(text_to_embed)
+
+        # 2. Prepare payload
+        new_data = [{
+            "id": article.id,
+            "vector": vector,
+            "title": article.title,
+            "text": text_to_embed[:100]
+        }]
+
+        # 3. Perform Merge (Upsert)
+        # This looks for an existing row with this 'id'.
+        # If found, it updates it. If not, it inserts it.
+        try:
+            tbl.merge(new_data, on="id")
+            print(f"Synced Article {article.id} to LanceDB.")
+        except Exception as e:
+            # Fallback for older LanceDB versions or empty tables:
+            # Delete and Re-add
+            tbl.delete(f"id = {article.id}")
+            tbl.add(new_data)
+            print(f"Synced (Fallback) Article {article.id} to LanceDB.")
+
+    def delete_article(self, article_id):
+        """
+        Removes an article from LanceDB when deleted from SQL.
+        """
+        tbl = self.get_or_create_table()
+        if tbl:
+            tbl.delete(f"id = {article_id}")
+            print(f"Deleted Article {article_id} from LanceDB.")
