@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% load i18n socialaccount crispy_forms_tags %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="card shadow">
+            <div class="card-body">
+                <h2 class="card-title text-center">{% trans "Sign Up" %}</h2>
+
+                <!-- Google Social Signup Button -->
+                <div class="d-grid gap-2 mb-3">
+                    <a href="{% provider_login_url 'google' %}" class="btn btn-danger">
+                        Sign up with Google
+                    </a>
+                </div>
+
+                <div class="text-center text-muted mb-3">
+                    <hr class="d-inline-block w-25"> {% trans "or" %} <hr class="d-inline-block w-25">
+                </div>
+
+                <!-- Standard Form -->
+                <form method="post" action="{% url 'account_signup' %}">
+                    {% csrf_token %}
+                    {{ form|crispy }}
+                    <div class="d-grid gap-2 mb-3">
+                        <button type="submit" class="btn btn-primary">{% trans "Create Account" %}</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,214 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-md-8">
+        <h1>Article Management Dashboard</h1>
+        <p class="text-muted">Manage your content for the recommendation engine.</p>
+    </div>
+    <div class="col-md-4 text-end">
+        <!-- Button to Open Create Modal -->
+        <button class="btn btn-success" onclick="openModal()">
+            <i class="bi bi-plus-circle"></i> Add New Article
+        </button>
+    </div>
+</div>
+
+<!-- Search/Recommendation Test Area -->
+<div class="card mb-4 bg-light">
+    <div class="card-body">
+        <h5><i class="bi bi-robot"></i> Test Semantic Search</h5>
+        <div class="input-group">
+            <input type="text" id="searchInput" class="form-control" placeholder="e.g., 'How to cook pasta' or 'Deep Learning'">
+            <button class="btn btn-primary" onclick="getRecommendations()">Search</button>
+        </div>
+        <div id="recResults" class="mt-3 list-group"></div>
+    </div>
+</div>
+
+<!-- Articles Table -->
+<div class="card shadow-sm">
+    <div class="card-body">
+        <table class="table table-hover">
+            <thead class="table-dark">
+                <tr>
+                    <th>ID</th>
+                    <th>Title</th>
+                    <th>Created At</th>
+                    <th class="text-end">Actions</th>
+                </tr>
+            </thead>
+            <tbody id="articleTableBody">
+                <!-- Data injected by JS -->
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Create/Edit Modal -->
+<div class="modal fade" id="articleModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modalTitle">New Article</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="articleId">
+                <div class="mb-3">
+                    <label class="form-label">Title</label>
+                    <input type="text" id="articleTitle" class="form-control">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Content</label>
+                    <textarea id="articleContent" class="form-control" rows="5"></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" onclick="saveArticle()">Save Changes</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- CSRF Token Helper for JS -->
+{% csrf_token %}
+
+<script>
+    const API_URL = '/api/articles/';
+    const REC_API_URL = '/api/recommend/';
+    const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+    let articleModal;
+
+    document.addEventListener('DOMContentLoaded', () => {
+        articleModal = new bootstrap.Modal(document.getElementById('articleModal'));
+        loadArticles();
+    });
+
+    // --- READ (List) ---
+    async function loadArticles() {
+        const response = await fetch(API_URL);
+        const data = await response.json();
+        const tbody = document.getElementById('articleTableBody');
+        tbody.innerHTML = '';
+
+        data.forEach(article => {
+            const date = new Date(article.created_at).toLocaleDateString();
+            tbody.innerHTML += `
+                <tr>
+                    <td>${article.id}</td>
+                    <td><strong>${article.title}</strong></td>
+                    <td>${date}</td>
+                    <td class="text-end">
+                        <button class="btn btn-sm btn-outline-primary me-2" 
+                            onclick="editArticle(${article.id})">Edit</button>
+                        <button class="btn btn-sm btn-outline-danger" 
+                            onclick="deleteArticle(${article.id})">Delete</button>
+                    </td>
+                </tr>
+            `;
+        });
+    }
+
+    // --- CREATE / UPDATE PREP ---
+    function openModal() {
+        document.getElementById('articleId').value = '';
+        document.getElementById('articleTitle').value = '';
+        document.getElementById('articleContent').value = '';
+        document.getElementById('modalTitle').innerText = 'New Article';
+        articleModal.show();
+    }
+
+    async function editArticle(id) {
+        // Fetch single article details
+        const response = await fetch(`${API_URL}${id}/`);
+        const article = await response.json();
+
+        document.getElementById('articleId').value = article.id;
+        document.getElementById('articleTitle').value = article.title;
+        document.getElementById('articleContent').value = article.content;
+        document.getElementById('modalTitle').innerText = 'Edit Article';
+        articleModal.show();
+    }
+
+    // --- CREATE / UPDATE EXECUTE ---
+    async function saveArticle() {
+        const id = document.getElementById('articleId').value;
+        const title = document.getElementById('articleTitle').value;
+        const content = document.getElementById('articleContent').value;
+        
+        const method = id ? 'PUT' : 'POST';
+        const url = id ? `${API_URL}${id}/` : API_URL;
+
+        const response = await fetch(url, {
+            method: method,
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrfToken
+            },
+            body: JSON.stringify({ title, content })
+        });
+
+        if (response.ok) {
+            articleModal.hide();
+            loadArticles(); // Refresh list
+            alert(id ? 'Article Updated! Vector Index syncing...' : 'Article Created! Vector Index syncing...');
+        } else {
+            alert('Error saving article');
+        }
+    }
+
+    // --- DELETE ---
+    async function deleteArticle(id) {
+        if (!confirm('Are you sure? This will remove it from SQL and the Vector Index.')) return;
+
+        const response = await fetch(`${API_URL}${id}/`, {
+            method: 'DELETE',
+            headers: { 'X-CSRFToken': csrfToken }
+        });
+
+        if (response.ok) {
+            loadArticles();
+        }
+    }
+
+    // --- RECOMMENDATION SEARCH ---
+    async function getRecommendations() {
+        const query = document.getElementById('searchInput').value;
+        const list = document.getElementById('recResults');
+        list.innerHTML = '<div class="spinner-border text-primary" role="status"></div>';
+
+        try {
+            const response = await fetch(REC_API_URL, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    // Note: Your recommend endpoint uses @csrf_exempt, 
+                    // but usually you'd pass the token here too.
+                },
+                body: JSON.stringify({ query: query })
+            });
+            
+            const data = await response.json();
+            list.innerHTML = '';
+
+            if (data.recommendations) {
+                data.recommendations.forEach(rec => {
+                    const score = (rec.similarity_score * 100).toFixed(1);
+                    list.innerHTML += `
+                        <a href="#" class="list-group-item list-group-item-action">
+                            <div class="d-flex w-100 justify-content-between">
+                                <h6 class="mb-1">${rec.title}</h6>
+                                <small class="text-success">${score}% Match</small>
+                            </div>
+                        </a>
+                    `;
+                });
+            }
+        } catch (e) {
+            list.innerHTML = '<p class="text-danger">Error fetching recommendations</p>';
+        }
+    }
+</script>
+{% endblock %}

@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% load crispy_forms_tags %}
+{% load socialaccount %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="card shadow">
+            <div class="card-body">
+                <h2 class="card-title text-center">Login</h2>
+                
+                <!-- OAuth2 Button -->
+                <div class="d-grid gap-2 mb-3">
+                    <a href="{% provider_login_url 'google' %}" class="btn btn-danger">
+                        Login with Google
+                    </a>
+                </div>
+                
+                <hr>
+
+                <form method="POST" action="{% url 'account_login' %}">
+                    {% csrf_token %}
+                    {{ form|crispy }}
+                    <div class="d-grid mt-3">
+                        <button class="btn btn-primary" type="submit">Sign In</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
