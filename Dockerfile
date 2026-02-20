@@ -2,7 +2,7 @@
 # === Stage 1: Builder ===
 FROM python:3.12-slim-bookworm AS builder
 
-ARG RAILWAY_SERVICE_ID
+
 
 # Copy uv from the official image
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
@@ -16,7 +16,7 @@ ENV PATH="$VIRTUAL_ENV/bin:$PATH"
 WORKDIR /app
 
 # Install dependencies using mandatory id in cache mount
-RUN --mount=type=cache,id=s/$RAILWAY_SERVICE_ID-uv,target=/root/.cache/uv \
+RUN --mount=type=cache,id=s/c2cf75a2-3467-4e04-b406-dfa42183ec4c-uv,target=/root/.cache/uv \
     --mount=type=bind,source=uv.lock,target=uv.lock \
     --mount=type=bind,source=pyproject.toml,target=pyproject.toml \
     uv sync --frozen --no-install-project --no-dev
