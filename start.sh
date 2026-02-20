@@ -10,6 +10,7 @@ DB_FILE="db.sqlite3"
 if [ ! -f "$DB_FILE" ]; then
     echo "SQLite database ($DB_FILE) not found. Running initial setup..."
 
+
     # 1. Run migrations (this automatically creates the db.sqlite3 file)
     python manage.py migrate --no-input
 
