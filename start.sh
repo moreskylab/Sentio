@@ -22,6 +22,7 @@ if [ ! -f "$DB_FILE" ]; then
     # 4. Vectorize existing articles and store in LanceDB
     python manage.py index_articles
 
+
     echo "Initial setup complete!"
 else
     echo "SQLite database ($DB_FILE) already exists. Skipping migrations and seeding."
@@ -31,5 +32,6 @@ echo "Starting Django server..."
 
 # Render uses the $PORT environment variable (defaults to 10000).
 # You MUST bind to 0.0.0.0, otherwise Render cannot route traffic to your app.
-PORT=${PORT:-8000}
-python manage.py runserver 0.0.0.0:$PORT
+#PORT=${PORT:-8000}
+#python manage.py runserver 0.0.0.0:$PORT
+python manage.py runserver
