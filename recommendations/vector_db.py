@@ -5,7 +5,9 @@ import pandas as pd
 
 # Settings
 LANCEDB_URI = "data/lancedb_store"
-MODEL_NAME = 'all-distilroberta-v1'  # Optimized RoBERTa version for sentence embeddings
+# MODEL_NAME = 'all-distilroberta-v1'  # Optimized RoBERTa version for sentence embeddings
+MODEL_NAME = 'all-MiniLM-L6-v2'  # Optimized RoBERTa version for sentence embeddings
+
 
 
 class VectorService:

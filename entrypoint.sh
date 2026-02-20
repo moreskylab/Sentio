@@ -33,6 +33,8 @@ echo "Starting Django server..."
 
 # Render uses the $PORT environment variable (defaults to 10000).
 # You MUST bind to 0.0.0.0, otherwise Render cannot route traffic to your app.
-PORT=${PORT:-8001}
+PORT=${PORT:-8000}
 python manage.py runserver 0.0.0.0:$PORT
 #python manage.py runserver
+
+#gunicorn --bind 0.0.0.0:$PORT core.wsgi:application
