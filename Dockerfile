@@ -1,42 +1,42 @@
-# syntax=docker/dockerfile:1
-# === Stage 1: Builder ===
-FROM python:3.12-slim-bookworm AS builder
+# Use a Python image with uv pre-installed
+FROM ghcr.io/astral-sh/uv:python3.12-bookworm-slim
 
+# Setup a non-root user
+RUN groupadd --system --gid 999 nonroot \
+ && useradd --system --gid 999 --uid 999 --create-home nonroot
 
-
-# Copy uv from the official image
-COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
-
-# Environment settings for build performance
-ENV UV_COMPILE_BYTECODE=1 \
-    UV_LINK_MODE=copy \
-    VIRTUAL_ENV=/opt/venv
-ENV PATH="$VIRTUAL_ENV/bin:$PATH"
-
+# Install the project into `/app`
 WORKDIR /app
 
-# Install dependencies using mandatory id in cache mount
+# Enable bytecode compilation
+ENV UV_COMPILE_BYTECODE=1
+
+# Copy from the cache instead of linking since it's a mounted volume
+ENV UV_LINK_MODE=copy
+
+# Omit development dependencies
+ENV UV_NO_DEV=1
+
+# Ensure installed tools can be executed out of the box
+ENV UV_TOOL_BIN_DIR=/usr/local/bin
+
+# Install the project's dependencies using the lockfile and settings
 RUN --mount=type=cache,id=s/c2cf75a2-3467-4e04-b406-dfa42183ec4c-root/cache/uv,target=/root/.cache/uv \
     --mount=type=bind,source=uv.lock,target=uv.lock \
     --mount=type=bind,source=pyproject.toml,target=pyproject.toml \
-    uv sync --frozen --no-install-project --no-dev
+    uv sync --locked --no-install-project
 
-# === Stage 2: Runtime ===
-FROM python:3.12-slim-bookworm
+# Then, add the rest of the project source code and install it
+# Installing separately from its dependencies allows optimal layer caching
+COPY . /app
+RUN --mount=type=cache,target=/root/.cache/uv \
+    uv sync --locked
 
-ENV VIRTUAL_ENV=/opt/venv \
-    PATH="/opt/venv/bin:$PATH" \
-    PYTHONDONTWRITEBYTECODE=1 \
-    PYTHONUNBUFFERED=1
+# Place executables in the environment at the front of the path
+ENV PATH="/app/.venv/bin:$PATH"
 
-WORKDIR /app
-
-# Copy the virtual environment from the builder
-COPY --from=builder /opt/venv /opt/venv
-
-# Copy application code
-COPY . .
+# Use the non-root user to run our application
+USER nonroot
 
 RUN chmod +x entrypoint.sh
 ENTRYPOINT ["./entrypoint.sh"]
-#CMD ["gunicorn", "--bind", "0.0.0.0:8000", "core.wsgi:application"]
