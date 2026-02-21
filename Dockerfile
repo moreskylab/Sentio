@@ -22,12 +22,12 @@ WORKDIR /app
 COPY pyproject.toml uv.lock ./
 
 # Use cache mount to completely speed up repeated builds
-RUN --mount=type=cache,target=/root/.cache/uv \
+RUN --mount=type=cache,id=s/c2cf75a2-3467-4e04-b406-dfa42183ec4c-/root/.cache/uv,target=/root/.cache/uv \
     uv sync --frozen --no-install-project --no-dev
 
 # 4. Copy project and install it
 COPY . .
-RUN --mount=type=cache,target=/root/.cache/uv \
+RUN --mount=type=cache,id=s/c2cf75a2-3467-4e04-b406-dfa42183ec4c-/root/.cache/uv,target=/root/.cache/uv \
     uv sync --frozen --no-dev
 
 # 5. Pre-download the ML Model
