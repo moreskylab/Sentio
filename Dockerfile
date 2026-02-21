@@ -12,16 +12,12 @@ ENV UV_NO_DEV=1
 ENV UV_TOOL_BIN_DIR=/usr/local/bin
 
 # FIX: Added required Railway prefix "s/" and consistent ID format
-RUN --mount=type=cache,id=s/c2cf75a2-3467-4e04-b406-dfa42183ec4c-uv,target=/root/.cache/uv \
-    --mount=type=bind,source=uv.lock,target=uv.lock \
-    --mount=type=bind,source=pyproject.toml,target=pyproject.toml \
-    uv sync --locked --no-install-project
+RUN uv sync --locked --no-install-project
 
 COPY . /app
 
 # FIX: Every cache mount must use the hardcoded Service ID prefix on Railway
-RUN --mount=type=cache,id=s/c2cf75a2-3467-4e04-b406-dfa42183ec4c-uv,target=/root/.cache/uv \
-    uv sync --locked
+RUN uv sync --locked
 
 ENV PATH="/app/.venv/bin:$PATH"
 
