@@ -37,4 +37,4 @@ echo "Starting Django server..."
 #python manage.py runserver 0.0.0.0:$PORT
 #python manage.py runserver
 
-#gunicorn --bind 0.0.0.0:$PORT core.wsgi:application
+gunicorn --bind 0.0.0.0:$PORT core.wsgi:application
