@@ -284,3 +284,11 @@ This is a harmless warning from the `transformers` library regarding the specifi
 *   `python manage.py populate_db`: Wipes the database and creates 12 sample articles across Tech, Nature, Food, and Finance.
 *   `python manage.py index_articles`: Iterates through all SQL articles, generates missing vectors, and stores them in LanceDB. Useful if you import data via raw SQL or if the LanceDB files get corrupted.
 ```
+
+
+## Docker Build
+
+```bash
+docker build -t moreskylab/sentio:latest -f Dockerfile .
+docker run -d -p 8000:8000 --env-file=.env --name sentio_1 moreskylab/sentio:latest
+```

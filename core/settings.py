@@ -27,10 +27,22 @@ SECRET_KEY = "django-insecure-lz@x+u9qq97!i9c8)i@vh%f87d4@z3%-o=avfi6k6!myb$r3=k
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-CSRF_TRUSTED_ORIGINS = ['https://sentio-ir7k.onrender.com']
-ALLOWED_HOSTS = ['.onrender.com', 'onrender.com'] + ['127.0.0.1']
+# Safely get ALLOWED_HOSTS; default to '*' if not provided
+# .split(',') converts "localhost,example.com" into ['localhost', 'example.com']
+ALLOWED_HOSTS = os.environ.get("ALLOWED_HOSTS", "*").split(",")
 
-SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+# Django 4.0+ requires schemes (http:// or https://) for CSRF_TRUSTED_ORIGINS
+# This logic adds both to ensure local and prod work with the wildcard
+CSRF_TRUSTED_ORIGINS = [
+    f"https://{host.strip()}" for host in ALLOWED_HOSTS if host.strip() and host != "*"
+] + [
+    f"http://{host.strip()}" for host in ALLOWED_HOSTS if host.strip() and host != "*"
+]
+
+# If ALLOWED_HOSTS is ['*'], you may need to explicitly trust your local origin for CSRF
+if "*" in ALLOWED_HOSTS:
+    CSRF_TRUSTED_ORIGINS += ["http://localhost:8000", "http://127.0.0.1:8000"]
+
 
 USE_X_FORWARDED_HOST = True
 # Application definition
