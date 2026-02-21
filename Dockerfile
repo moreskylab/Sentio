@@ -12,7 +12,9 @@ ENV UV_NO_DEV=1
 ENV UV_TOOL_BIN_DIR=/usr/local/bin
 
 # FIX: Added required Railway prefix "s/" and consistent ID format
-RUN uv sync --locked --no-install-project
+RUN --mount=type=bind,source=uv.lock,target=uv.lock \
+    --mount=type=bind,source=pyproject.toml,target=pyproject.toml \
+    uv sync --locked --no-install-project
 
 COPY . /app
 
